@@ -1,0 +1,43 @@
+name: Auto Build PDF Terjemahan
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'TERJEMAHAN.md'
+      - 'rajah/**'
+      - '**.md'
+  workflow_dispatch:
+
+jobs:
+  build-pdf:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install Pandoc and LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended texlive-latex-recommended lmodern
+
+      - name: Build PDF from TERJEMAHAN.md
+        run: |
+          if [ -f "TERJEMAHAN.md" ]; then
+            pandoc TERJEMAHAN.md -o TERJEMAHAN_Kitab_Abu_Masyar.pdf --pdf-engine=xelatex -V geometry:margin=1in -V mainfont="DejaVu Serif" --toc -V toc-title="Daftar Isi"
+            echo "PDF berhasil dibuat!"
+            ls -lh *.pdf
+          else
+            echo "TERJEMAHAN.md belum ada, skip"
+            exit 0
+          fi
+
+      - name: Commit PDF ke repo
+        run: |
+          git config --local user.email "fatimah86-dot@users.noreply.github.com"
+          git config --local user.name "fatimah86-dot"
+          git add TERJEMAHAN_Kitab_Abu_Masyar.pdf || true
+          git diff --staged --quiet || git commit -m "Auto PDF: TERJEMAHAN_Kitab_Abu_Masyar.pdf [skip ci]"
+          git push
